@@ -1,0 +1,41 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "farmacia-be751",
+          "appId": "1:1008661090688:android:b382785453d831d2b9f165",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "farmacia-be751",
+          "configurations": {
+            "android": "1:1008661090688:android:b382785453d831d2b9f165",
+            "ios": "1:1008661090688:ios:0251e355a76f6b92b9f165",
+            "macos": "1:1008661090688:ios:0251e355a76f6b92b9f165",
+            "web": "1:1008661090688:web:6d42913ef728fdd2b9f165",
+            "windows": "1:1008661090688:web:313e58ecdf83f780b9f165"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ]
+}

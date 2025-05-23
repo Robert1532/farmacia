@@ -1,122 +1,168 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:farmacia/firebase_options.dart';
+import 'package:farmacia/providers/auth_provider_firebase.dart';
+import 'package:farmacia/providers/medication_provider_firebase.dart';
+import 'package:farmacia/providers/shelf_provider_firebase.dart';
+import 'package:farmacia/providers/sale_provider_firebase.dart';
+import 'package:farmacia/providers/theme_provider.dart';
+import 'package:farmacia/screens/splash_screen.dart';
+import 'package:farmacia/screens/auth/login_screen.dart';
+import 'package:farmacia/screens/auth/register_screen.dart';
+import 'package:farmacia/screens/home/home_screen.dart';
+import 'package:farmacia/screens/admin/admin_screen.dart';
+import 'package:farmacia/screens/admin/admin_dashboard_screen.dart';
+import 'package:farmacia/screens/admin/user_management_screen.dart';
+import 'package:farmacia/screens/admin/reports/monthly_sales_screen.dart';
+import 'package:farmacia/screens/admin/reports/sales_report_screen.dart';
+import 'package:farmacia/screens/admin/reports/inventory_report_screen.dart';
+import 'package:farmacia/screens/medication/medication_list_screen.dart';
+import 'package:farmacia/screens/medication/medication_detail_screen.dart';
+import 'package:farmacia/screens/medication/medication_form_screen.dart';
+import 'package:farmacia/screens/sales/sales_screen.dart';
+import 'package:farmacia/screens/sales/sale_detail_screen.dart';
+import 'package:farmacia/screens/sales/new_sale_screen.dart';
+import 'package:farmacia/screens/shelf/shelf_list_screen.dart';
+import 'package:farmacia/screens/shelf/shelf_detail_screen.dart';
+import 'package:farmacia/screens/shelf/shelf_form_screen.dart';
+import 'package:farmacia/screens/profile/profile_screen.dart';
+import 'package:farmacia/screens/settings/settings_screen.dart';
+import 'package:farmacia/screens/expiring/expiring_medications_screen.dart';
+import 'package:farmacia/screens/expiring/expiring_by_shelf_screen.dart';
+import 'package:farmacia/screens/expiring/shelf_expiring_detail_screen.dart';
+import 'package:farmacia/utils/app_theme.dart';
+import 'package:farmacia/utils/currency_formatter.dart';
+import 'package:farmacia/screens/admin/user_form_screen.dart';  // ejemplo
 
-void main() {
-  runApp(const MyApp());
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  await initializeDateFormatting('es_ES', null);
+  await CurrencyFormatter.initialize();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProviderFirebase()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => MedicationProviderFirebase()),
+        ChangeNotifierProvider(create: (_) => ShelfProviderFirebase()),
+        ChangeNotifierProxyProvider<MedicationProviderFirebase, SaleProviderFirebase>(
+          create: (context) => SaleProviderFirebase(
+            Provider.of<MedicationProviderFirebase>(context, listen: false),
+          ),
+          update: (context, medicationProvider, previous) => 
+            previous ?? SaleProviderFirebase(medicationProvider),
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+      title: 'Farmacia App',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('es', 'ES'),
+        Locale('en', 'US'),
+      ],
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/admin': (context) => const AdminScreen(),
+        '/admin/dashboard': (context) => const AdminDashboardScreen(),
+        '/admin/users': (context) => const UserManagementScreen(),
+         '/admin/users/add': (context) => const UserFormScreen(),
+        '/admin/reports/monthly-sales': (context) => const MonthlySalesScreen(),
+        '/admin/reports/sales': (context) => const SalesReportScreen(),
+        '/admin/reports/inventory': (context) => const InventoryReportScreen(),
+        '/medications': (context) => const MedicationListScreen(),
+        '/sales': (context) => const SalesScreen(),
+        '/new-sale': (context) => const NewSaleScreen(),
+        '/shelves': (context) => const ShelfListScreen(),
+        '/profile': (context) => const ProfileScreen(),
+        '/settings': (context) => const SettingsScreen(),
+        '/expiring': (context) => const ExpiringMedicationsScreen(),
+        '/expiring/by-shelf': (context) => const ExpiringByShelfScreen(),
+      },
+      onGenerateRoute: (settings) {
+        // Manejo de rutas con argumentos
+        if (settings.name == '/medication-detail') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => MedicationDetailScreen(
+              medicationId: args['medicationId'],
             ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+          );
+        } else if (settings.name == '/sale-detail') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => SaleDetailScreen(
+              saleId: args['saleId'],
+            ),
+          );
+        } else if (settings.name == '/shelf-detail') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => ShelfDetailScreen(
+              shelfId: args['shelfId'],
+            ),
+          );
+        } else if (settings.name == '/expiring/shelf-detail') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => ShelfExpiringDetailScreen(
+              shelfId: args['shelfId'],
+            ),
+          );
+        } else if (settings.name == '/admin/reports') {
+          return MaterialPageRoute(
+            builder: (context) => const SalesReportScreen(),
+          );
+        } else if (settings.name == '/medication-form') {
+          final args = settings.arguments as Map<String, dynamic>?;
+          return MaterialPageRoute(
+            builder: (context) => MedicationFormScreen(
+              medicationId: args?['medicationId'],
+            ),
+          );
+        } else if (settings.name == '/shelf-form') {
+          final args = settings.arguments as Map<String, dynamic>?;
+          return MaterialPageRoute(
+            builder: (context) => ShelfFormScreen(
+              shelf: args?['shelf'], // Cambiado para recibir el objeto completo
+            ),
+          );
+        }
+        return null;
+      },
     );
   }
 }

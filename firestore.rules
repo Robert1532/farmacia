@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Función para verificar si el usuario está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Función para verificar si el usuario es el propietario del documento
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Función para verificar si el usuario es administrador
+    function isAdmin() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Función para verificar si el usuario es empleado o administrador
+    function isEmployee() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'employee' ||
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+    
+    // Reglas para la colección de usuarios
+    match /users/{userId} {
+      // Cualquier usuario autenticado puede leer su propio documento
+      // Solo administradores pueden leer todos los documentos
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Solo administradores pueden crear y actualizar usuarios
+      // Excepción: un usuario puede actualizar su propio documento, pero no cambiar su rol
+      allow create: if isAdmin();
+      allow update: if isAdmin() || 
+                     (isOwner(userId) && 
+                      !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));
+      
+      // Solo administradores pueden eliminar usuarios
+      allow delete: if isAdmin();
+    }
+    
+    // Reglas para la colección de medicamentos
+    match /medications/{medicationId} {
+      // Empleados y administradores pueden leer y escribir
+      allow read: if isEmployee();
+      allow write: if isEmployee();
+    }
+    
+    // Reglas para la colección de estantes
+    match /shelves/{shelfId} {
+      // Empleados y administradores pueden leer y escribir
+      allow read: if isEmployee();
+      allow write: if isEmployee();
+    }
+    
+    // Reglas para la colección de ventas
+    match /sales/{saleId} {
+      // Empleados y administradores pueden leer y escribir
+      allow read: if isEmployee();
+      allow write: if isEmployee();
+    }
+    
+    // Reglas para la colección de items de venta
+    match /sale_items/{itemId} {
+      // Empleados y administradores pueden leer y escribir
+      allow read: if isEmployee();
+      allow write: if isEmployee();
+    }
+  }
+}
